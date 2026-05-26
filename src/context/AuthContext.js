@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { API_URL } from '../lib/api';
+import { useLanguage } from './LanguageContext';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const { t, language } = useLanguage();
   const [user, setUser]       = useState(null);
   const [profile, setProfile] = useState(null);
   const [captain, setCaptain] = useState(null);
@@ -19,14 +21,43 @@ export function AuthProvider({ children }) {
       const { data: cap } = await supabase
         .from('captains').select('*').eq('id', userId).single();
       setCaptain(cap);
+    } else {
+      setCaptain(null);
     }
+  };
+
+  const becomeCaptain = async (data) => {
+    if (!user) throw new Error('Not authenticated');
+    const city = data.city || (language === 'en' ? 'Baghdad' : 'بغداد');
+    const { error: roleErr } = await supabase
+      .from('profiles').update({ role: 'captain' }).eq('id', user.id);
+    if (roleErr) throw roleErr;
+
+    const payload = {
+      gym_name: data.gymName?.trim(),
+      specialty: data.specialty?.trim(),
+      experience_years: parseInt(data.experience, 10) || 0,
+      price_per_session: parseInt(data.pricePerSession, 10) || 0,
+      bio: data.bio?.trim() || '',
+      badge: data.badge?.trim() || '',
+      city,
+      available: true,
+    };
+
+    const { data: existing } = await supabase.from('captains').select('id').eq('id', user.id).maybeSingle();
+    const { error: capErr } = existing
+      ? await supabase.from('captains').update(payload).eq('id', user.id)
+      : await supabase.from('captains').insert({ id: user.id, ...payload });
+    if (capErr) throw capErr;
+    await loadProfile(user.id);
   };
 
   const signInWithPi = async (isAuto = false) => {
     try {
       if (!window.Pi) {
         console.warn('Pi SDK not loaded on window.');
-        return;
+        if (!isAuto) return { error: t('piSdkMissing') };
+        return null;
       }
 
       // Treat Pi.init(...) as a Promise; await it fully before calling Pi.authenticate(...)
@@ -89,12 +120,11 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error('Pi Authentication failed:', err);
-      if (!isAuto) {
-        alert('حدث خطأ أثناء مصادقة Pi Network. يرجى فتح التطبيق داخل متصفح Pi Browser.');
-      }
+      if (!isAuto) return { error: t('piAuthError') };
     } finally {
       setLoading(false);
     }
+    return null;
   };
 
   useEffect(() => {
@@ -131,7 +161,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, captain, loading, signOut, loadProfile, refreshCaptain, signInWithPi }}>
+    <AuthContext.Provider value={{ user, profile, captain, loading, signOut, loadProfile, refreshCaptain, signInWithPi, becomeCaptain }}>
       {children}
     </AuthContext.Provider>
   );

@@ -34,7 +34,6 @@ export const GLOBAL_CSS = `
     font-family: 'Cairo', sans-serif;
     background: ${C.bg};
     color: ${C.text};
-    direction: rtl;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }

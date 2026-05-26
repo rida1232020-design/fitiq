@@ -26,18 +26,18 @@ export function Btn({ children, onClick, variant = 'primary', size = 'md', disab
 }
 
 /* ── Input ── */
-export function Input({ label, value, onChange, placeholder, type = 'text', icon, multiline, rows = 3, style = {} }) {
+export function Input({ label, value, onChange, placeholder, type = 'text', icon, multiline, rows = 3, style = {}, dir = 'rtl' }) {
   const inputStyle = {
     width: '100%', background: C.bgInput, border: `1.5px solid ${C.border}`,
-    borderRadius: 14, padding: icon ? '11px 14px 11px 40px' : '11px 14px',
-    color: C.text, fontSize: 14, outline: 'none', direction: 'rtl',
+    borderRadius: 14, padding: icon ? (dir === 'rtl' ? '11px 14px 11px 40px' : '11px 40px 11px 14px') : '11px 14px',
+    color: C.text, fontSize: 14, outline: 'none', direction: dir,
     fontFamily: 'Cairo, sans-serif', transition: 'border 0.2s', ...style,
   };
   return (
     <div style={{ marginBottom: 14 }}>
       {label && <label style={{ display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{label}</label>}
       <div style={{ position: 'relative' }}>
-        {icon && <span style={{ position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', fontSize: 16, pointerEvents: 'none' }}>{icon}</span>}
+        {icon && <span style={{ position: 'absolute', [dir === 'rtl' ? 'right' : 'left']: 13, top: '50%', transform: 'translateY(-50%)', fontSize: 16, pointerEvents: 'none' }}>{icon}</span>}
         {multiline
           ? <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}/>
           : <input type={type} value={value} onChange={onChange} placeholder={placeholder} style={inputStyle}/>
